@@ -1,0 +1,14 @@
+micronaut:
+  application:
+    name: global-dashboard-auth
+
+grpc:
+  server:
+    port: 8080 # Using 8080 for gRPC/HTTP as per standard
+
+redis:
+  uri: redis://localhost:6379
+
+kafka:
+  bootstrap:
+    servers: localhost:9092

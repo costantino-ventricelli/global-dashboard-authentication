@@ -1,0 +1,34 @@
+replicaCount: 1
+
+image:
+  repository: global-dashboard-auth
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+service:
+  type: ClusterIP
+  port: 8080 # gRPC/HTTP
+
+kafka:
+  bootstrap:
+    servers: "kafka-headless.kafka.svc.cluster.local:9092"
+
+redis:
+  auth:
+    enabled: true
+    password: "redispassword"
+  architecture: standalone
+
+app:
+  redis:
+    host: "global-dashboard-auth-redis-master"
+    port: 6379
+    password: "redispassword"
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi

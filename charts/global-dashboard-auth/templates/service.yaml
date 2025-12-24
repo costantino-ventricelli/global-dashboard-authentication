@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "global-dashboard-auth.fullname" . }}
+  labels:
+    {{- include "global-dashboard-auth.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+    - port: 50051 # Optional standard gRPC port mapping if needed, but we share 8080 usually with Micronaut
+      targetPort: http
+      name: grpc
+  selector:
+    {{- include "global-dashboard-auth.selectorLabels" . | nindent 4 }}
