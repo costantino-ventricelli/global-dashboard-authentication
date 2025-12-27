@@ -5,4 +5,6 @@ import java.util.concurrent.CompletableFuture;
 
 public interface KafkaUserClient {
     CompletableFuture<UserEvent> findUser(String username);
+
+    CompletableFuture<UserEvent> createUser(String username, String email, String passwordHash);
 }

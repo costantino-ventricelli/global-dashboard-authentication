@@ -9,6 +9,19 @@ option java_outer_classname = "AuthProto";
 service AuthService {
   rpc Login (LoginRequest) returns (LoginResponse);
   rpc Verify (VerifyRequest) returns (VerifyResponse);
+  rpc Register (RegisterRequest) returns (RegisterResponse);
+}
+
+message RegisterRequest {
+  string username = 1;
+  string email = 2;
+  string password = 3;
+}
+
+message RegisterResponse {
+  string user_id = 1;
+  string username = 2;
+  string status = 3;
 }
 
 message LoginRequest {

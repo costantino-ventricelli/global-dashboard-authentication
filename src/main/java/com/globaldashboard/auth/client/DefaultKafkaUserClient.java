@@ -2,6 +2,7 @@ package com.globaldashboard.auth.client;
 
 import com.globaldashboard.auth.event.user.UserEvent;
 import com.globaldashboard.auth.event.user.UserFindRequest;
+import com.globaldashboard.auth.event.user.UserCreateRequest;
 import jakarta.inject.Singleton;
 import java.util.concurrent.CompletableFuture;
 
@@ -21,6 +22,13 @@ public class DefaultKafkaUserClient implements KafkaUserClient {
         CompletableFuture<UserEvent> future = registry.register(username);
         producer.sendFindRequest(username, new UserFindRequest(username));
         // Add timeout logic ideally, but keeping it simple for now
+        return future;
+    }
+
+    @Override
+    public CompletableFuture<UserEvent> createUser(String username, String email, String passwordHash) {
+        CompletableFuture<UserEvent> future = registry.register(username);
+        producer.sendCreateRequest(username, new UserCreateRequest(username, email, passwordHash));
         return future;
     }
 }

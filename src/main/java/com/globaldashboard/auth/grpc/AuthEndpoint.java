@@ -37,10 +37,10 @@ public class AuthEndpoint extends AuthServiceGrpc.AuthServiceImplBase {
     private final JwtTokenValidator tokenValidator;
 
     @Inject
-    public AuthEndpoint(KafkaUserClient userClient, 
-                        SessionService sessionService,
-                        JwtTokenGenerator tokenGenerator,
-                        JwtTokenValidator tokenValidator) {
+    public AuthEndpoint(KafkaUserClient userClient,
+            SessionService sessionService,
+            JwtTokenGenerator tokenGenerator,
+            JwtTokenValidator tokenValidator) {
         this.userClient = userClient;
         this.sessionService = sessionService;
         this.tokenGenerator = tokenGenerator;
@@ -101,35 +101,35 @@ public class AuthEndpoint extends AuthServiceGrpc.AuthServiceImplBase {
     public void verify(VerifyRequest request, StreamObserver<VerifyResponse> responseObserver) {
         // 1. Parse JWT
         // Uses Micronaut Security Validator which verifies Signature & Expiration
-        org.reactivestreams.Publisher<Authentication> authenticationPublisher = tokenValidator.validateToken(request.getToken(), null);
-        
-        Mono.from(authenticationPublisher).subscribe(
-            auth -> {
-                // 2. Extract JTI (Session ID)
-                Object jtiObj = auth.getAttributes().get("jti");
-                if (jtiObj == null) {
-                    sendInvalid(responseObserver, "Missing JTI");
-                    return;
-                }
-                String sessionId = jtiObj.toString();
+        org.reactivestreams.Publisher<Authentication> authenticationPublisher = tokenValidator
+                .validateToken(request.getToken(), null);
 
-                // 3. Check Redis
-                if (sessionService.validateSession(sessionId)) {
-                    // Valid
-                    VerifyResponse response = VerifyResponse.newBuilder()
-                            .setValid(true)
-                            .setUsername(auth.getName())
-                            .setUserId(sessionId) // Or map userId if we stored it in claims
-                            .addAllRoles(auth.getRoles())
-                            .build();
-                    responseObserver.onNext(response);
-                    responseObserver.onCompleted();
-                } else {
-                    sendInvalid(responseObserver, "Session expired or revoked");
-                }
-            },
-            error -> sendInvalid(responseObserver, "Invalid Token: " + error.getMessage())
-        );
+        Mono.from(authenticationPublisher).subscribe(
+                auth -> {
+                    // 2. Extract JTI (Session ID)
+                    Object jtiObj = auth.getAttributes().get("jti");
+                    if (jtiObj == null) {
+                        sendInvalid(responseObserver, "Missing JTI");
+                        return;
+                    }
+                    String sessionId = jtiObj.toString();
+
+                    // 3. Check Redis
+                    if (sessionService.validateSession(sessionId)) {
+                        // Valid
+                        VerifyResponse response = VerifyResponse.newBuilder()
+                                .setValid(true)
+                                .setUsername(auth.getName())
+                                .setUserId(sessionId) // Or map userId if we stored it in claims
+                                .addAllRoles(auth.getRoles())
+                                .build();
+                        responseObserver.onNext(response);
+                        responseObserver.onCompleted();
+                    } else {
+                        sendInvalid(responseObserver, "Session expired or revoked");
+                    }
+                },
+                error -> sendInvalid(responseObserver, "Invalid Token: " + error.getMessage()));
     }
 
     private void sendInvalid(StreamObserver<VerifyResponse> observer, String reason) {
@@ -141,5 +141,41 @@ public class AuthEndpoint extends AuthServiceGrpc.AuthServiceImplBase {
                 .build();
         observer.onNext(response);
         observer.onCompleted();
+    }
+
+    @Override
+    public void register(com.globaldashboard.auth.proto.RegisterRequest request,
+            StreamObserver<com.globaldashboard.auth.proto.RegisterResponse> responseObserver) {
+        try {
+            // 1. Hash Password
+            String hashedPassword = BCrypt.hashpw(request.getPassword(), BCrypt.gensalt());
+
+            // 2. Call Kafka Client (Async Request-Reply)
+            UserEvent result = userClient.createUser(request.getUsername(), request.getEmail(), hashedPassword)
+                    .get(5, TimeUnit.SECONDS);
+
+            // 3. Handle Result
+            if (result.type() == UserEvent.EventType.ERROR) {
+                responseObserver.onError(io.grpc.Status.ALREADY_EXISTS
+                        .withDescription("User creation failed: " + result.message()).asRuntimeException());
+                return;
+            }
+
+            // 4. Success
+            com.globaldashboard.auth.proto.RegisterResponse response = com.globaldashboard.auth.proto.RegisterResponse
+                    .newBuilder()
+                    .setUserId(String.valueOf(result.id()))
+                    .setUsername(result.username())
+                    .setStatus("CREATED")
+                    .build();
+
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            LOG.error("Registration failed", e);
+            responseObserver.onError(io.grpc.Status.INTERNAL
+                    .withDescription("Registration failed: " + e.getMessage()).asRuntimeException());
+        }
     }
 }
