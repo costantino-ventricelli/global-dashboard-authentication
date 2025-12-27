@@ -133,3 +133,25 @@ tasks.jacocoTestReport {
         }
     }))
 }
+
+tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
+    dependsOn(tasks.test)
+    violationRules {
+        rule {
+            limit {
+                minimum = 0.7.toBigDecimal()
+            }
+        }
+    }
+    classDirectories.setFrom(files(classDirectories.files.map {
+        fileTree(it).matching {
+            exclude("com/globaldashboard/auth/proto/**")
+            exclude("com/globaldashboard/auth/grpc/**")
+            exclude("**/*\$*")
+        }
+    }))
+}
+
+tasks.named("check") {
+    dependsOn(tasks.named("jacocoTestCoverageVerification"))
+}
