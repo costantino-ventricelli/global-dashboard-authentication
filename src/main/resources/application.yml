@@ -1,10 +1,22 @@
 micronaut:
   application:
     name: global-dashboard-auth
+  security:
+    authentication: bearer
+    token:
+      jwt:
+        signatures:
+          secret:
+            generator:
+              secret: "\"${JWT_GENERATOR_SIGNATURE_SECRET:pleaseChangeThisSecretForANewOne}\""
+    intercept-url-map:
+      - pattern: /health/**
+        access:
+          - isAnonymous()
 
 grpc:
   server:
-    port: 8080 # Using 8080 for gRPC/HTTP as per standard
+    port: 50051
 
 redis:
   uri: redis://localhost:6379

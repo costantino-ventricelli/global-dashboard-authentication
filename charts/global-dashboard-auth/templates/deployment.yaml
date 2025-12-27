@@ -25,6 +25,8 @@ spec:
           env:
             - name: MICRONAUT_SERVER_PORT
               value: {{ .Values.service.port | quote }}
+            - name: GRPC_SERVER_PORT
+              value: "50051"
             - name: REDIS_URI
               value: "redis://:{{ .Values.app.redis.password }}@{{ .Values.app.redis.host }}:{{ .Values.app.redis.port }}"
             - name: KAFKA_BOOTSTRAP_SERVERS
@@ -33,13 +35,17 @@ spec:
             httpGet:
               path: /health/liveness
               port: http
-            initialDelaySeconds: 15
+            initialDelaySeconds: 45
             periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 5
           readinessProbe:
             httpGet:
               path: /health/readiness
               port: http
-            initialDelaySeconds: 10
+            initialDelaySeconds: 20
             periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 5
           resources:
             {{- toYaml .Values.resources | nindent 12 }}

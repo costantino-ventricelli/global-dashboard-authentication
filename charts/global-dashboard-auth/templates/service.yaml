@@ -8,11 +8,12 @@ spec:
   type: {{ .Values.service.type }}
   ports:
     - port: {{ .Values.service.port }}
-      targetPort: http
+      targetPort: 8080
       protocol: TCP
       name: http
-    - port: 50051 # Optional standard gRPC port mapping if needed, but we share 8080 usually with Micronaut
-      targetPort: http
+    - port: 50051
+      targetPort: 50051
+      protocol: TCP
       name: grpc
   selector:
     {{- include "global-dashboard-auth.selectorLabels" . | nindent 4 }}

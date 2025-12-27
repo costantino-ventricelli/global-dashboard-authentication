@@ -39,6 +39,7 @@ dependencies {
     implementation("io.micronaut:micronaut-jackson-databind")
     implementation("javax.annotation:javax.annotation-api:1.3.2")
     implementation("org.mindrot:jbcrypt:0.4")
+    implementation("io.micronaut:micronaut-management")
     
     runtimeOnly("ch.qos.logback:logback-classic")
     runtimeOnly("org.yaml:snakeyaml")
@@ -115,4 +116,20 @@ tasks.test {
         exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
         showStandardStreams = true
     }
+}
+
+tasks.jacocoTestReport {
+    reports {
+        xml.required.set(false)
+        csv.required.set(true)
+        html.outputLocation.set(layout.buildDirectory.dir("jacocoHtml"))
+    }
+    
+    classDirectories.setFrom(files(classDirectories.files.map {
+        fileTree(it).matching {
+            exclude("com/globaldashboard/auth/proto/**")
+            exclude("com/globaldashboard/auth/grpc/**")
+            exclude("**/*\$*")
+        }
+    }))
 }
