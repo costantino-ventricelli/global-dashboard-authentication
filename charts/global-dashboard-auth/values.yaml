@@ -1,9 +1,9 @@
 replicaCount: 1
 
 image:
-  repository: global-dashboard-auth
+  repository: global-dashboard-authentication
   pullPolicy: IfNotPresent
-  tag: "0.1"
+  tag: "latest"
 
 service:
   type: ClusterIP
@@ -11,17 +11,18 @@ service:
 
 kafka:
   bootstrap:
-    servers: "kafka-headless.kafka.svc.cluster.local:9092"
+    servers: "my-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092"
 
 redis:
   auth:
     enabled: true
     password: "redispassword"
   architecture: standalone
+  enabled: false
 
 app:
   redis:
-    host: "global-dashboard-auth-redis-master"
+    host: "redis-master"
     port: 6379
     password: "redispassword"
 
